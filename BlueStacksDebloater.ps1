@@ -365,8 +365,7 @@ $script:ExplicitTargetKeys = @(
     'bst.feature.enable_boot_promotion_grid',
     'bst.feature.smart_downloads',
     'bst.enable_bsx_app_shortcuts',
-    'bst.feature.send_auto_record_stats',
-    'bst.feature.split_ad_enabled'
+    'bst.feature.send_auto_record_stats'
 )
 
 # Regex to detect ad/promo/tracking configuration keys
@@ -703,17 +702,10 @@ function Invoke-HostDebloat {
 
     if (-not $DryRun -and $modifiedCount -gt 0) {
         Write-ConfLines $lines
-        try {
-            Set-ItemProperty -LiteralPath $Conf -Name IsReadOnly -Value $true -ErrorAction Stop
-            Say (Get-Text 'ConfReadOnlySuccess') Green
-        } catch {
-            Say (Get-Text 'ConfReadOnlyFail' @($_.Exception.Message)) Yellow
-        }
+        Clear-ConfReadOnly
         Say (Get-Text 'HostDebloatSummary' @($modifiedCount)) Green
     } elseif ($modifiedCount -eq 0 -and -not $DryRun) {
-        try {
-            Set-ItemProperty -LiteralPath $Conf -Name IsReadOnly -Value $true -ErrorAction Stop
-        } catch {}
+        Clear-ConfReadOnly
         Say (Get-Text 'HostDebloatClean') DarkGray
     }
 }
