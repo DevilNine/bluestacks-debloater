@@ -10,7 +10,7 @@ net session >nul 2>&1
 if %errorlevel% neq 0 (
     echo Solicitando privilegios de Administrador (UAC)...
     echo Requesting Administrator privileges (UAC)...
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Start-Process cmd.exe -ArgumentList '/k \"\"%~f0\"\"' -Verb RunAs"
     exit /b
 )
 
