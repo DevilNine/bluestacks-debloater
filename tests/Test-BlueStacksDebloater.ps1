@@ -63,6 +63,11 @@ try {
     Assert-True ($outStatus -match 'Pie64' -and $outStatus -match '5555') "Status deve reportar instancia Pie64 e porta 5555"
     Write-Host "[+] T5: Diagnostico de Instancias e Status OK." -ForegroundColor Green
 
+    # Teste FixHosts
+    $outFix = & $engine -Action FixHosts -DryRun -Language pt -NoPause *>&1 | Out-String
+    Assert-True ($outFix -match 'hosts' -or $outFix -match 'download') "FixHosts deve executar diagnostico e reparo do hosts"
+    Write-Host "[+] T6: Acao FixHosts (Desbloqueio de downloads) OK." -ForegroundColor Green
+
 } finally {
     Remove-Item -LiteralPath $tempDir -Recurse -Force -ErrorAction SilentlyContinue
 }

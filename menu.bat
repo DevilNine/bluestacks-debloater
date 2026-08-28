@@ -29,9 +29,10 @@ echo   [3] Apenas Guest Android (ADB, Hosts Interno e Bloatwares)
 echo   [4] Previa / Simulacao (Dry-Run, nao altera nada)
 echo   [5] Diagnostico e Status de Instancias
 echo   [6] Restaurar Backup Anterior (Undo)
+echo   [7] Desbloquear Downloads Oficiais (Remover bloqueio de cloud/eb)
 echo   [0] Sair / Exit
 echo.
-set /p op="Selecione uma opcao / Select an option [0-6]: "
+set /p op="Selecione uma opcao / Select an option [0-7]: "
 
 if "%op%"=="1" (
     powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0BlueStacksDebloater.ps1" -Action Full
@@ -60,6 +61,11 @@ if "%op%"=="5" (
 )
 if "%op%"=="6" (
     powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0BlueStacksDebloater.ps1" -Action Undo
+    pause
+    goto MENU
+)
+if "%op%"=="7" (
+    powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0BlueStacksDebloater.ps1" -Action FixHosts
     pause
     goto MENU
 )

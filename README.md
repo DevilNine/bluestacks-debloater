@@ -24,6 +24,7 @@ Projetada para funcionar de forma direta e sem atritos: para a maioria dos usuá
   - Desativação de V-Sync interno para redução de input lag (`enable_vsync="0"`).
 - **Bloqueio de Rede (Hosts Windows e Android):**
   - Redirecionamento de domínios de publicidade, analytics e telemetria da BlueStacks e Google Ads para `0.0.0.0`.
+  - **Preservação de Downloads Oficiais:** os domínios de download e entrega de instaladores (`cloud.bluestacks.com` e `eb.bluestacks.com`) são mantidos 100% liberados, garantindo que o usuário possa baixar o BlueStacks pelo site oficial e atualizar instâncias sem erros de servidor.
   - Limpeza automática do cache DNS local (`Clear-DnsClientCache`).
   - Atualização do arquivo `/system/etc/hosts` na instância Android quando montável como gravação.
 - **Bloqueio de Processos Auxiliares em Segundo Plano:**
@@ -48,6 +49,9 @@ Projetada para funcionar de forma direta e sem atritos: para a maioria dos usuá
 #### Modo de Restauração (Rollback)
 - Dê dois cliques em **`restaurar.bat`** para restaurar a cópia de segurança mais recente (`bluestacks.conf`, hosts do Windows e reativar pacotes do Android).
 
+#### Desbloqueio Rápido de Downloads do Site Oficial
+- Se você já teve o site do BlueStacks bloqueado por versões antigas ou scripts externos, dê dois cliques em **`desbloquear-downloads.bat`**. Ele remove automaticamente qualquer bloqueio aos servidores de download (`cloud.bluestacks.com` / `eb.bluestacks.com`) e limpa o cache DNS.
+
 #### Modo Avançado / Menu Interativo
 - Dê dois cliques em **`menu.bat`** para escolher entre:
   - `[1]` Debloat Completo
@@ -56,6 +60,7 @@ Projetada para funcionar de forma direta e sem atritos: para a maioria dos usuá
   - `[4]` Prévia / Simulação (Dry-Run sem alterações)
   - `[5]` Diagnóstico de Instâncias e Portas ADB
   - `[6]` Restaurar Backup Anterior
+  - `[7]` Desbloquear Downloads Oficiais
 
 #### Automação via Linha de Comando (PowerShell)
 ```powershell
@@ -101,6 +106,7 @@ Designed for zero friction: standard users only need to double-click the batch l
   - Disables internal v-sync for reduced input latency (`enable_vsync="0"`).
 - **Network Level Blocking (Windows & Android Hosts):**
   - Null-routes (`0.0.0.0`) known BlueStacks and Google ad/telemetry domains in `%SystemRoot%\System32\drivers\etc\hosts`.
+  - **Official Downloads Preserved:** Download infrastructure and CDN domains (`cloud.bluestacks.com` and `eb.bluestacks.com`) are intentionally preserved and never blocked, ensuring users can download BlueStacks from the official site and update instances without server errors.
   - Automatically flushes local DNS resolver cache (`Clear-DnsClientCache`).
   - Updates guest Android `/system/etc/hosts` on writable system partitions.
 - **Background Helper Blocking:**
@@ -125,6 +131,9 @@ Designed for zero friction: standard users only need to double-click the batch l
 #### Rollback Mode
 - Double-click **`restaurar.bat`** to restore the latest backup (`bluestacks.conf`, Windows hosts file, helpers, and Android packages).
 
+#### Quick Official Download Unblock
+- If official BlueStacks downloads were blocked by earlier scripts, double-click **`desbloquear-downloads.bat`**. It instantly removes any blocks on `cloud.bluestacks.com` or `eb.bluestacks.com` and flushes the DNS cache.
+
 #### Interactive Menu
 - Double-click **`menu.bat`** to access granular options:
   - `[1]` Full Debloat & Optimization
@@ -133,6 +142,7 @@ Designed for zero friction: standard users only need to double-click the batch l
   - `[4]` Dry-Run Preview (No changes made)
   - `[5]` Status & Instance Diagnostics
   - `[6]` Restore from Backup
+  - `[7]` Unblock Official Downloads
 
 #### Command Line Automation (PowerShell)
 ```powershell

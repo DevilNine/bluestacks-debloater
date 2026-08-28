@@ -36,7 +36,7 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('Full', 'HostOnly', 'GuestOnly', 'Undo', 'Status')]
+    [ValidateSet('Full', 'HostOnly', 'GuestOnly', 'Undo', 'Status', 'FixHosts')]
     [string]$Action = 'Full',
 
     [switch]$DryRun,
@@ -142,6 +142,11 @@ $script:Messages = @{
         NoBackupsFound       = '[*] Nenhum backup anterior detectado.'
         AdbTargetDryRun      = '    [dry-run] Alvo ADB: {0} (Porta: {1})'
         
+        # Fix Hosts & Downloads
+        FixHostsSuccess      = '[+] Domínios de download do BlueStacks liberados no hosts! Downloads do site oficial agora funcionam normalmente.'
+        FixHostsClean        = '[*] Os domínios de download do BlueStacks já estavam liberados no arquivo hosts.'
+        DownloadUnblocked    = '[+] Removido bloqueio indevido de download: {0}'
+        
         # Completion
         DebloatCompleted     = '[+] OTIMIZAÇÃO CONCLUÍDA: O BlueStacks agora está livre de anúncios, com telemetria bloqueada e taxa de quadros destravada!'
         RebootNotice         = '[*] Você já pode abrir o BlueStacks novamente e desfrutar da experiência limpa.'
@@ -230,6 +235,11 @@ $script:Messages = @{
         NoBackupsFound       = '[*] No previous backups detected.'
         AdbTargetDryRun      = '    [dry-run] ADB Target: {0} (Port: {1})'
         
+        # Fix Hosts & Downloads
+        FixHostsSuccess      = '[+] BlueStacks download domains unblocked in hosts! Official site downloads now function normally.'
+        FixHostsClean        = '[*] BlueStacks download domains were already unblocked in hosts file.'
+        DownloadUnblocked    = '[+] Removed improper download domain block: {0}'
+        
         # Completion
         DebloatCompleted     = '[+] OPTIMIZATION COMPLETE: BlueStacks is now debloated, telemetry-blocked, and unlocked for maximum FPS!'
         RebootNotice         = '[*] You may now launch BlueStacks and enjoy a clean, fast experience.'
@@ -293,15 +303,16 @@ foreach ($d in @($script:StateDir, $script:BackupRoot, $script:LogDir)) {
     }
 }
 
-# Target domains to block across host and guest
+# Target domains to block across host and guest (ads, analytics, tracking)
+# NOTE: cloud.bluestacks.com and eb.bluestacks.com are intentionally NOT blocked because they host
+# the official web installer API and engine build CDN. Blocking them breaks bluestacks.com downloads!
 $script:BlockDomains = @(
     'googleads.g.doubleclick.net', 'pagead2.googlesyndication.com', 'googlesyndication.com',
     'www.googleadservices.com', 'adservice.google.com', 'app-measurement.com',
     'ads.bluestacks.com', 'cloudslivessmedia.bluestacks.com', 'adsdk.bluestacks.com',
     'aigame-analytics.bluestacks.com', 'game-analytics.bluestacks.com', 'analytics.bluestacks.com',
     'telemetry.bluestacks.com', 'bsx.bluestacks.com', 'cloudslivesmedia.bluestacks.com',
-    'admob.g.doubleclick.net', 'ad.doubleclick.net',
-    'eb.bluestacks.com', 'cloud.bluestacks.com', 'delegate.bluestacks.com'
+    'admob.g.doubleclick.net', 'ad.doubleclick.net'
 )
 
 # Explicit configuration parameters to suppress in bluestacks.conf
@@ -751,9 +762,55 @@ function Invoke-PerformanceOptimization {
 }
 
 # ==============================================================================
-# Engine Modules: Windows Hosts File Debloat
+# Engine Modules: Windows Hosts File Debloat & Download Repair
 # ==============================================================================
+function Repair-WindowsHostsFile {
+    $hostsPath = $script:WindowsHostsPath
+    if (-not (Test-Path -LiteralPath $hostsPath)) { return }
+
+    $downloadDomains = @('cloud\.bluestacks\.com', 'eb\.bluestacks\.com', 'delegate\.bluestacks\.com')
+    $lines = [System.IO.File]::ReadAllLines($hostsPath)
+    $filtered = New-Object System.Collections.Generic.List[string]
+    $removed = @()
+
+    foreach ($line in $lines) {
+        $shouldRemove = $false
+        foreach ($d in $downloadDomains) {
+            if ($line -match "(?i)^\s*0\.0\.0\.0\s+$d\b") {
+                $shouldRemove = $true
+                $removed += ($line.Trim() -replace '^\s*0\.0\.0\.0\s+', '')
+                break
+            }
+        }
+        if (-not $shouldRemove) {
+            $filtered.Add($line)
+        }
+    }
+
+    if ($removed.Count -gt 0) {
+        if (-not $DryRun) {
+            try {
+                [System.IO.File]::WriteAllLines($hostsPath, $filtered, [System.Text.Encoding]::ASCII)
+                Clear-DnsClientCache -ErrorAction SilentlyContinue
+                foreach ($item in $removed) {
+                    Say (Get-Text 'DownloadUnblocked' @($item)) Green
+                }
+                Say (Get-Text 'FixHostsSuccess') Green
+            } catch {
+                Say (Get-Text 'WinHostsFail' @($_.Exception.Message)) Red
+            }
+        } else {
+            foreach ($item in $removed) {
+                Say ("    [dry-run] " + (Get-Text 'DownloadUnblocked' @($item))) Yellow
+            }
+        }
+    } else {
+        Say (Get-Text 'FixHostsClean') DarkGray
+    }
+}
+
 function Invoke-WindowsHostsDebloat {
+    Repair-WindowsHostsFile
     $hostsPath = $script:WindowsHostsPath
     if (Test-Path -LiteralPath $hostsPath) {
         Say (Get-Text 'WinHostsStart') Cyan
@@ -1035,7 +1092,7 @@ Say (Get-Text 'InstallPath' @($Install)) DarkGray
 Say (Get-Text 'ConfPath' @($Conf)) DarkGray
 Write-Host ''
 
-if ($Action -ne 'Status' -and $Action -ne 'Undo' -and -not (Test-Path -LiteralPath $Conf)) {
+if ($Action -ne 'Status' -and $Action -ne 'Undo' -and $Action -ne 'FixHosts' -and -not (Test-Path -LiteralPath $Conf)) {
     Say (Get-Text 'ConfNotFound') Red
     if (-not $NoPause -and $Host.Name -eq 'ConsoleHost') {
         Write-Host ''
@@ -1088,6 +1145,9 @@ switch ($Action) {
     }
     'Status' {
         Show-StatusReport
+    }
+    'FixHosts' {
+        Repair-WindowsHostsFile
     }
 }
 
