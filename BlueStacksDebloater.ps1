@@ -67,6 +67,7 @@ $script:Messages = @{
         ConfPath             = 'Arquivo bluestacks.conf : {0}'
         ConfNotFound         = '[!] bluestacks.conf não encontrado. Abra o BlueStacks pelo menos uma vez para gerar os arquivos e execute novamente.'
         AdminRequired        = '[!] Permissões de Administrador necessárias para continuar.'
+        ElevationNotice      = '[*] Solicitando privilégios de Administrador (UAC)...'
         ClosingProcesses     = '[*] Encerrando processos ativos do BlueStacks (HD-*, Bstk*, BlueStacks*)...'
         DryRunNotice         = '[*] Modo Dry-Run ativo: nenhuma alteração será gravada.'
         BackupSaved          = '[+] Backup completo salvo em: {0}'
@@ -160,6 +161,7 @@ $script:Messages = @{
         ConfPath             = 'Configuration file     : {0}'
         ConfNotFound         = '[!] bluestacks.conf not found. Please launch BlueStacks at least once to create config files, then re-run.'
         AdminRequired        = '[!] Administrator privileges are required to proceed.'
+        ElevationNotice      = '[*] Requesting Administrator privileges (UAC)...'
         ClosingProcesses     = '[*] Closing active BlueStacks processes (HD-*, Bstk*, BlueStacks*)...'
         DryRunNotice         = '[*] Dry-Run mode active: no changes will be written.'
         BackupSaved          = '[+] Full backup saved to: {0}'
@@ -1083,10 +1085,35 @@ function Show-StatusReport {
     }
 }
 
+function Test-IsAdministrator {
+    $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+    return $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Restart-Elevated {
+    param([string]$TargetAction)
+    $scriptPath = $MyInvocation.MyCommand.Definition
+    if (-not $scriptPath) { $scriptPath = $PSCommandPath }
+    $argList = @('-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$scriptPath`"", '-Action', $TargetAction)
+    if ($Language) { $argList += @('-Language', $Language) }
+    if ($Conf) { $argList += @('-Conf', "`"$Conf`"") }
+    if ($NoPause) { $argList += '-NoPause' }
+    Start-Process -FilePath 'powershell.exe' -ArgumentList $argList -Verb RunAs
+}
+
 # ==============================================================================
 # Main Orchestration
 # ==============================================================================
 Show-Header
+
+if ($Action -ne 'Status' -and -not $DryRun -and -not (Test-IsAdministrator)) {
+    if ($Host.Name -eq 'ConsoleHost') {
+        Say (Get-Text 'ElevationNotice') Yellow
+        Restart-Elevated -TargetAction $Action
+        return
+    }
+}
+
 Say (Get-Text 'DetectingPaths') DarkGray
 Say (Get-Text 'InstallPath' @($Install)) DarkGray
 Say (Get-Text 'ConfPath' @($Conf)) DarkGray
