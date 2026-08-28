@@ -1,11 +1,19 @@
 @echo off
-setlocal EnableDelayedExpansion
+setlocal
 chcp 65001 >nul
 title BlueStacks Debloater - Menu
 
-:: Garante execucao no diretorio do script
-cd /d "%~dp0"
+:: Verificacao e auto-elevacao transparente
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\elevate.vbs"
+    echo UAC.ShellExecute "cmd.exe", "/c """"%~f0""""", "", "runas", 1 >> "%temp%\elevate.vbs"
+    cscript //nologo "%temp%\elevate.vbs"
+    del "%temp%\elevate.vbs"
+    exit /b
+)
 
+cd /d "%~dp0"
 :MENU
 cls
 echo ============================================================================

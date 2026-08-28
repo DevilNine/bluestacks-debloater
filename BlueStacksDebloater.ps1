@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     BlueStacks Debloater & Optimizer
     Removes ads, telemetry, promotional spam, and optimizes graphics performance on BlueStacks 5.
@@ -361,7 +361,12 @@ $script:ExplicitTargetKeys = @(
     'bst.usage_stats_interval',
     'bst.feature.send_notification_stats',
     'bst.feature.send_internal_notification_stats',
-    'bst.enable_discord_integration'
+    'bst.enable_discord_integration',
+    'bst.feature.enable_boot_promotion_grid',
+    'bst.feature.smart_downloads',
+    'bst.enable_bsx_app_shortcuts',
+    'bst.feature.send_auto_record_stats',
+    'bst.feature.split_ad_enabled'
 )
 
 # Regex to detect ad/promo/tracking configuration keys
@@ -667,6 +672,32 @@ function Invoke-HostDebloat {
                 Say (Get-Text 'KeyAppended' @($k, $targetVal)) Green
                 $modifiedCount++
             }
+        }
+    }
+
+    # Clear cached promo banners, Prime ads and nowBux assets from Engine folders
+    $baseData = if ($script:Reg -and $script:Reg.DataDir) { $script:Reg.DataDir } else { Join-Path $env:ProgramData 'BlueStacks_nxt' }
+    $engineDir = Join-Path $baseData 'Engine'
+    if (Test-Path -LiteralPath $engineDir) {
+        Get-ChildItem -LiteralPath $engineDir -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            $instDir = $_.FullName
+            foreach ($folderName in @('Promotions', 'nowBux', 'Flyers', 'AppCache')) {
+                $targetDir = Join-Path $instDir $folderName
+                if (Test-Path -LiteralPath $targetDir) {
+                    if (-not $DryRun) {
+                        Get-ChildItem -LiteralPath $targetDir -Recurse -Force -ErrorAction SilentlyContinue |
+                            Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+                    }
+                }
+            }
+        }
+    }
+    # Clear AiGames models and cache
+    $aiDir = Join-Path $baseData 'AiGames'
+    if (Test-Path -LiteralPath $aiDir) {
+        if (-not $DryRun) {
+            Get-ChildItem -LiteralPath $aiDir -Recurse -Force -ErrorAction SilentlyContinue |
+                Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
 
@@ -1108,9 +1139,13 @@ Show-Header
 
 if ($Action -ne 'Status' -and -not $DryRun -and -not (Test-IsAdministrator)) {
     if ($Host.Name -eq 'ConsoleHost') {
-        Say (Get-Text 'ElevationNotice') Yellow
-        Restart-Elevated -TargetAction $Action
-        return
+        try {
+            Say (Get-Text 'ElevationNotice') Yellow
+            Restart-Elevated -TargetAction $Action
+            return
+        } catch {
+            Say (Get-Text 'AdminRequired') Yellow
+        }
     }
 }
 
