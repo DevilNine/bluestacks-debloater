@@ -1,0 +1,12 @@
+# Runtime state and backups
+state/
+backups/
+*.log
+*.bak
+*.tmp
+
+# System and IDE
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
